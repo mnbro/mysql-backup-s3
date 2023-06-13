@@ -40,4 +40,4 @@ jobs:
           file: Dockerfile
           platforms: ${{ env.platforms_to_build_for }}
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}/${{ env.branch }}:latest
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}:latest

@@ -115,6 +115,7 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
       fi
 
       copy_s3 "${DUMP_FILE}.gpg" $S3_FILE
+      rm -f "${DUMP_FILE}.gpg" "${DUMP_FILE}"
     else
       >&2 echo "Error creating dump of ${DB}"
     fi
@@ -146,6 +147,7 @@ else
     fi
 
     copy_s3 "${DUMP_FILE}.gpg" $S3_FILE
+    rm -f "${DUMP_FILE}.gpg" "${DUMP_FILE}"
   else
     >&2 echo "Error creating dump of all databases"
   fi
