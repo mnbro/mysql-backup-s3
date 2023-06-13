@@ -1,6 +1,6 @@
 # mysql-backup-s3
 
-Backup MySQL to S3 (supports periodic backups & mutli files)
+Backup MySQL to S3 (supports periodic backups, multi files, encryption and retention)
 
 ## Basic usage
 
