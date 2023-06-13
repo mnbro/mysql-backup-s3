@@ -100,7 +100,7 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
         echo "Encrypting backup..."
         gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
           if [ $? == 0 ]; then
-            S3_FILE="${DUMP_START_TIME}.${DB}.sql.gz"
+            S3_FILE="${DUMP_START_TIME}.${DB}.sql.gz.gpg"
           else
             >&2 echo "Error encrypting dump of ${DB}"
           fi
@@ -108,7 +108,7 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
         echo "Encrypting backup..."
         gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
           if [ $? == 0 ]; then
-            S3_FILE="${S3_FILENAME}.${DB}.sql.gz"
+            S3_FILE="${S3_FILENAME}.${DB}.sql.gz.gpg"
           else
             >&2 echo "Error encrypting dump of ${DB}"
           fi
@@ -132,7 +132,7 @@ else
       echo "Encrypting backup..."
       gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
         if [ $? == 0 ]; then
-          S3_FILE="${DUMP_START_TIME}.dump.sql.gz"
+          S3_FILE="${DUMP_START_TIME}.dump.sql.gz.gpg"
         else
           >&2 echo "Error encrypting dump of ${DB}"
         fi
@@ -140,7 +140,7 @@ else
       echo "Encrypting backup..."
       gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
         if [ $? == 0 ]; then
-          S3_FILE="${S3_FILENAME}.sql.gz"
+          S3_FILE="${S3_FILENAME}.sql.gz.gpg"
         else
           >&2 echo "Error encrypting dump of ${DB}"
         fi
@@ -161,11 +161,11 @@ if [ -n "$BACKUP_KEEP_DAYS" ]; then
   backups_query="Contents[?LastModified<='${date_from_remove} 00:00:00'].{Key: Key}"
 
   echo "Removing old backups from $S3_BUCKET..."
-  aws $aws_args s3api list-objects \
+  aws $AWS_ARGS s3api list-objects \
     --bucket "${S3_BUCKET}" \
     --prefix "${S3_PREFIX}" \
     --query "${backups_query}" \
     --output text \
-    | xargs -n1 -t -I 'KEY' aws $aws_args s3 rm s3://"${S3_BUCKET}"/'KEY'
+    | xargs -n1 -t -I 'KEY' aws $AWS_ARGS s3 rm s3://"${S3_BUCKET}"/'KEY'
   echo "Removal complete."
 fi
