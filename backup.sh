@@ -92,7 +92,7 @@ copy_s3 () {
   
   cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$S3_PREFIX/$DEST_FILE
 
-  if [ $? != 0 ]; then
+  if [ $? -ne 0 ]; then
     >&2 curl -X POST -F "body=Error uploading ${DEST_FILE} on S3" -F 'title=Mysql Backup Error' http://notifications:8000/notify
   fi
 
@@ -119,11 +119,11 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
 
     mysqldump $MYSQL_HOST_OPTS $MYSQLDUMP_OPTIONS --databases $DB | gzip > $DUMP_FILE
 
-    if [ $? == 0 ]; then
+    if [ $? -eq 0 ]; then
       if [ "${S3_FILENAME}" == "**None**" ]; then
         echo "Encrypting backup..."
         gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
-          if [ $? == 0 ]; then
+          if [ $? -eq 0 ]; then
             S3_FILE="${DUMP_START_TIME}.${DB}.sql.gz.gpg"
           else
             >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notifications:8000/notify
@@ -131,7 +131,7 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
       else
         echo "Encrypting backup..."
         gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
-          if [ $? == 0 ]; then
+          if [ $? -eq 0 ]; then
             S3_FILE="${S3_FILENAME}.${DB}.sql.gz.gpg"
           else
             >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notifications:8000/notify
@@ -151,11 +151,11 @@ else
   DUMP_FILE="/tmp/dump.sql.gz"
   mysqldump $MYSQL_HOST_OPTS $MYSQLDUMP_OPTIONS $MYSQLDUMP_DATABASE | gzip > $DUMP_FILE
 
-  if [ $? == 0 ]; then
+  if [ $? -eq 0 ]; then
     if [ "${S3_FILENAME}" == "**None**" ]; then
       echo "Encrypting backup..."
       gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
-        if [ $? == 0 ]; then
+        if [ $? -eq 0 ]; then
           S3_FILE="${DUMP_START_TIME}.dump.sql.gz.gpg"
         else
           >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notifications:8000/notify
@@ -163,7 +163,7 @@ else
     else
       echo "Encrypting backup..."
       gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
-        if [ $? == 0 ]; then
+        if [ $? -eq 0 ]; then
           S3_FILE="${S3_FILENAME}.sql.gz.gpg"
         else
           >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notifications:8000/notify
