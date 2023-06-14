@@ -19,7 +19,7 @@ $ docker run -e S3_ACCESS_KEY_ID=key -e S3_SECRET_ACCESS_KEY=secret -e S3_BUCKET
 - `MYSQL_PASSWORD` the mysql password *required*
 - `MYSQL_USER_FILE` the mysql user if you use a docker swarm secret*required*
 - `MYSQL_PASSWORD_FILE` the mysql password if you use a docker swarm secret*required*
-- `ENCRYPTION` the password used to encrypt dumps *required*
+- `PASSPHRASE_FILE` the file containing password used to encrypt dumps *required*
 - `S3_ACCESS_KEY_ID` your AWS access key *required*
 - `S3_SECRET_ACCESS_KEY` your AWS secret key *required*
 - `S3_ACCESS_KEY_ID_FILE` your AWS access key if you use a docker swarm secret *required*

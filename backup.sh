@@ -30,8 +30,8 @@ if [ "${MYSQL_PASSWORD}" == "**None**" ] || [ "${MYSQL_PASSWORD_FILE}" == "**Non
   exit 1
 fi
 
-if [ "${PASSPHRASE}" == "**None**" ]; then
-  echo "You need to set the PASSPHRASE environment variable in order to encrypt the backup."
+if [ "${PASSPHRASE_FILE}" == "**None**" ]; then
+  echo "You need to set the PASSPHRASE_FILE environment variable in order to encrypt the backup."
   exit 1
 fi
 
@@ -67,6 +67,7 @@ fi
 
 MYSQL_HOST_OPTS="-h $MYSQL_HOST -P $MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD"
 DUMP_START_TIME=$(date +"%Y-%m-%dT%H%M%SZ")
+export PASSPHRASE=$(cat ${PASSPHRASE_FILE})
 
 copy_s3 () {
   SRC_FILE=$1
