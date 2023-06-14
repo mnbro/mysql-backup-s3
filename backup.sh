@@ -196,7 +196,11 @@ if [ -n "$BACKUP_KEEP_DAYS" ]; then
     --query "${backups_query}" \
     --output text \
     | xargs -n1 -t -I 'KEY' aws $AWS_ARGS s3 rm s3://"${S3_BUCKET}"/'KEY'
-  echo "Removal complete."
+  if [ $? -eq 0 ]; then
+    echo "Removal complete."
+  else
+    >&2 curl -X POST -F "body=Removal of old backups failed" -F 'title=Mysql Backup Error' ${NOTIFICATIONS_SERVER_URL}
+  fi
 fi
 
 curl ${WEBHOOK}
