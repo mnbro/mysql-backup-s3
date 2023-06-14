@@ -2,11 +2,11 @@
 
 set -eo pipefail
 
-if [ "${S3_ACCESS_KEY_ID}" == "**None**" ] ||  [ "${S3_ACCESS_KEY_ID_FILE}" == "**None**" ]; then
+if [ "${S3_ACCESS_KEY_ID}" == "**None**" ] &&  [ "${S3_ACCESS_KEY_ID_FILE}" == "**None**" ]; then
   echo "Warning: You did not set the S3_ACCESS_KEY_ID or S3_ACCESS_KEY_ID_FILE environment variable."
 fi
 
-if [ "${S3_SECRET_ACCESS_KEY}" == "**None**" ] ||  [ "${S3_SECRET_ACCESS_KEY_FILE}" == "**None**" ]; then
+if [ "${S3_SECRET_ACCESS_KEY}" == "**None**" ] &&  [ "${S3_SECRET_ACCESS_KEY_FILE}" == "**None**" ]; then
   echo "Warning: You did not set the S3_SECRET_ACCESS_KEY environment variable."
 fi
 
@@ -20,12 +20,12 @@ if [ "${MYSQL_HOST}" == "**None**" ]; then
   exit 1
 fi
 
-if [ "${MYSQL_USER}" == "**None**" ] || [ "${MYSQL_USER_FILE}" == "**None**" ]; then
+if [ "${MYSQL_USER}" == "**None**" ] && [ "${MYSQL_USER_FILE}" == "**None**" ]; then
   echo "You need to set the MYSQL_USER or MYSQL_USER_FILE environment variable."
   exit 1
 fi
 
-if [ "${MYSQL_PASSWORD}" == "**None**" ] || [ "${MYSQL_PASSWORD_FILE}" == "**None**" ]; then
+if [ "${MYSQL_PASSWORD}" == "**None**" ] && [ "${MYSQL_PASSWORD_FILE}" == "**None**" ]; then
   echo "You need to set the MYSQL_PASSWORD or MYSQL_PASSWORD_FILE environment variable or link to a container named MYSQL."
   exit 1
 fi
@@ -93,7 +93,7 @@ copy_s3 () {
   cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$S3_PREFIX/$DEST_FILE
 
   if [ $? != 0 ]; then
-    >&2 curl -X POST -F "body=Error uploading ${DEST_FILE} on S3" -F 'title=Mysql Backup Error' http://notify:8000/notify
+    >&2 curl -X POST -F "body=Error uploading ${DEST_FILE} on S3" -F 'title=Mysql Backup Error' http://notifications:8000/notify
   fi
 
   rm $SRC_FILE
@@ -126,7 +126,7 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
           if [ $? == 0 ]; then
             S3_FILE="${DUMP_START_TIME}.${DB}.sql.gz.gpg"
           else
-            >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notify:8000/notify
+            >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notifications:8000/notify
           fi
       else
         echo "Encrypting backup..."
@@ -134,19 +134,19 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
           if [ $? == 0 ]; then
             S3_FILE="${S3_FILENAME}.${DB}.sql.gz.gpg"
           else
-            >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notify:8000/notify
+            >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notifications:8000/notify
           fi
       fi
 
       copy_s3 "${DUMP_FILE}.gpg" $S3_FILE
       rm -f "${DUMP_FILE}.gpg" "${DUMP_FILE}"
     else
-      >&2 curl -X POST -F "body=Error creating dump of ${DB}" -F 'title=Mysql Backup Error' http://notify:8000/notify
+      >&2 curl -X POST -F "body=Error creating dump of ${DB}" -F 'title=Mysql Backup Error' http://notifications:8000/notify
     fi
   done
 # Multi file: no
 else
-  curl -X POST -F "body=Creating dump for ${MYSQLDUMP_DATABASE} from ${MYSQL_HOST}..." -F 'title=Mysql Backup Error' http://notify:8000/notify
+  curl -X POST -F "body=Creating dump for ${MYSQLDUMP_DATABASE} from ${MYSQL_HOST}..." -F 'title=Mysql Backup Error' http://notifications:8000/notify
 
   DUMP_FILE="/tmp/dump.sql.gz"
   mysqldump $MYSQL_HOST_OPTS $MYSQLDUMP_OPTIONS $MYSQLDUMP_DATABASE | gzip > $DUMP_FILE
@@ -158,7 +158,7 @@ else
         if [ $? == 0 ]; then
           S3_FILE="${DUMP_START_TIME}.dump.sql.gz.gpg"
         else
-          >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notify:8000/notify
+          >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notifications:8000/notify
         fi
     else
       echo "Encrypting backup..."
@@ -166,14 +166,14 @@ else
         if [ $? == 0 ]; then
           S3_FILE="${S3_FILENAME}.sql.gz.gpg"
         else
-          >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notify:8000/notify
+          >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notifications:8000/notify
         fi
     fi
 
     copy_s3 "${DUMP_FILE}.gpg" $S3_FILE
     rm -f "${DUMP_FILE}.gpg" "${DUMP_FILE}"
   else
-    >&2 curl -X POST -F "body=Error creating dump of all databases" -F 'title=Mysql Backup Error' http://notify:8000/notify
+    >&2 curl -X POST -F "body=Error creating dump of all databases" -F 'title=Mysql Backup Error' http://notifications:8000/notify
   fi
 fi
 
