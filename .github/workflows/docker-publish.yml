@@ -9,7 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   branch: master
-  platforms_to_build_for: linux/arm64,linux/amd64
+  platforms_to_build_for: linux/arm64
 
 jobs:
   build:
