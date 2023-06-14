@@ -25,6 +25,7 @@ $ docker run -e S3_ACCESS_KEY_ID=key -e S3_SECRET_ACCESS_KEY=secret -e S3_BUCKET
 - `S3_ACCESS_KEY_ID_FILE` your AWS access key if you use a docker swarm secret *required*
 - `S3_SECRET_ACCESS_KEY_FILE` your AWS secret key if you use a docker swarm secret*required*
 - `S3_BUCKET` your AWS S3 bucket path *required*
+- `NOTIFICATIONS_SERVER_URL` your apprise-api server URL*required*
 - `S3_PREFIX` path prefix in your bucket (default: 'backup')
 - `S3_FILENAME` a consistent filename to overwrite with your backup.  If not set will use a timestamp.
 - `S3_REGION` the AWS S3 bucket region (default: us-west-1)
