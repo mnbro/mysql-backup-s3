@@ -2,11 +2,11 @@
 
 set -eo pipefail
 
-if [ "${S3_ACCESS_KEY_ID}" == "**None**" ]; then
-  echo "Warning: You did not set the S3_ACCESS_KEY_ID environment variable."
+if [ "${S3_ACCESS_KEY_ID}" == "**None**" ] ||  [ "${S3_ACCESS_KEY_ID_FILE}" == "**None**" ]; then
+  echo "Warning: You did not set the S3_ACCESS_KEY_ID or S3_ACCESS_KEY_ID_FILE environment variable."
 fi
 
-if [ "${S3_SECRET_ACCESS_KEY}" == "**None**" ]; then
+if [ "${S3_SECRET_ACCESS_KEY}" == "**None**" ] ||  [ "${S3_SECRET_ACCESS_KEY_FILE}" == "**None**" ]; then
   echo "Warning: You did not set the S3_SECRET_ACCESS_KEY environment variable."
 fi
 
@@ -20,13 +20,13 @@ if [ "${MYSQL_HOST}" == "**None**" ]; then
   exit 1
 fi
 
-if [ "${MYSQL_USER}" == "**None**" ]; then
-  echo "You need to set the MYSQL_USER environment variable."
+if [ "${MYSQL_USER}" == "**None**" ] || [ "${MYSQL_USER_FILE}" == "**None**" ]; then
+  echo "You need to set the MYSQL_USER or MYSQL_USER_FILE environment variable."
   exit 1
 fi
 
-if [ "${MYSQL_PASSWORD}" == "**None**" ]; then
-  echo "You need to set the MYSQL_PASSWORD environment variable or link to a container named MYSQL."
+if [ "${MYSQL_PASSWORD}" == "**None**" ] || [ "${MYSQL_PASSWORD_FILE}" == "**None**" ]; then
+  echo "You need to set the MYSQL_PASSWORD or MYSQL_PASSWORD_FILE environment variable or link to a container named MYSQL."
   exit 1
 fi
 
@@ -35,11 +35,34 @@ if [ "${PASSPHRASE}" == "**None**" ]; then
   exit 1
 fi
 
+if [ "${WEBHOOK}" == "**None**" ]; then
+  echo "You need to set the WEBHOOK environment variable in order to monitor backup execution."
+  exit 1
+fi
+
 if [ "${S3_IAMROLE}" != "true" ]; then
   # env vars needed for aws tools - only if an IAM role is not used
-  export AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY_ID
-  export AWS_SECRET_ACCESS_KEY=$S3_SECRET_ACCESS_KEY
   export AWS_DEFAULT_REGION=$S3_REGION
+
+  if [ "${S3_SECRET_ACCESS_KEY_FILE}" == "**None**" ]; then
+    export AWS_SECRET_ACCESS_KEY=$S3_SECRET_ACCESS_KEY
+  else
+    export AWS_SECRET_ACCESS_KEY=$(cat $S3_SECRET_ACCESS_KEY_FILE)
+  fi
+
+  if [ "${S3_ACCESS_KEY_ID_FILE}" == "**None**" ]; then
+    export AWS_ACCESS_KEY_ID=$S3_ACCESS_KEY_ID
+  else
+    export AWS_ACCESS_KEY_ID=$(cat $S3_ACCESS_KEY_ID_FILE)
+  fi
+fi
+
+if [ "${MYSQL_PASSWORD_FILE}" != "**None**" ]; then
+    export MYSQL_PASSWORD=$(cat $MYSQL_PASSWORD_FILE)
+fi
+
+if [ "${MYSQL_USER_FILE}" != "**None**" ]; then
+    export MYSQL_USER=$(cat $MYSQL_USER_FILE)
 fi
 
 MYSQL_HOST_OPTS="-h $MYSQL_HOST -P $MYSQL_PORT -u$MYSQL_USER -p$MYSQL_PASSWORD"
@@ -69,7 +92,7 @@ copy_s3 () {
   cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$S3_PREFIX/$DEST_FILE
 
   if [ $? != 0 ]; then
-    >&2 echo "Error uploading ${DEST_FILE} on S3"
+    >&2 curl -X POST -F "body=Error uploading ${DEST_FILE} on S3" -F 'title=Mysql Backup Error' http://notify:8000/notify
   fi
 
   rm $SRC_FILE
@@ -102,7 +125,7 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
           if [ $? == 0 ]; then
             S3_FILE="${DUMP_START_TIME}.${DB}.sql.gz.gpg"
           else
-            >&2 echo "Error encrypting dump of ${DB}"
+            >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notify:8000/notify
           fi
       else
         echo "Encrypting backup..."
@@ -110,19 +133,19 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
           if [ $? == 0 ]; then
             S3_FILE="${S3_FILENAME}.${DB}.sql.gz.gpg"
           else
-            >&2 echo "Error encrypting dump of ${DB}"
+            >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notify:8000/notify
           fi
       fi
 
       copy_s3 "${DUMP_FILE}.gpg" $S3_FILE
       rm -f "${DUMP_FILE}.gpg" "${DUMP_FILE}"
     else
-      >&2 echo "Error creating dump of ${DB}"
+      >&2 curl -X POST -F "body=Error creating dump of ${DB}" -F 'title=Mysql Backup Error' http://notify:8000/notify
     fi
   done
 # Multi file: no
 else
-  echo "Creating dump for ${MYSQLDUMP_DATABASE} from ${MYSQL_HOST}..."
+  curl -X POST -F "body=Creating dump for ${MYSQLDUMP_DATABASE} from ${MYSQL_HOST}..." -F 'title=Mysql Backup Error' http://notify:8000/notify
 
   DUMP_FILE="/tmp/dump.sql.gz"
   mysqldump $MYSQL_HOST_OPTS $MYSQLDUMP_OPTIONS $MYSQLDUMP_DATABASE | gzip > $DUMP_FILE
@@ -134,7 +157,7 @@ else
         if [ $? == 0 ]; then
           S3_FILE="${DUMP_START_TIME}.dump.sql.gz.gpg"
         else
-          >&2 echo "Error encrypting dump of ${DB}"
+          >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notify:8000/notify
         fi
     else
       echo "Encrypting backup..."
@@ -142,14 +165,14 @@ else
         if [ $? == 0 ]; then
           S3_FILE="${S3_FILENAME}.sql.gz.gpg"
         else
-          >&2 echo "Error encrypting dump of ${DB}"
+          >&2 curl -X POST -F "body=Error encrypting dump of ${DB}" -F 'title=Mysql Backup Error' http://notify:8000/notify
         fi
     fi
 
     copy_s3 "${DUMP_FILE}.gpg" $S3_FILE
     rm -f "${DUMP_FILE}.gpg" "${DUMP_FILE}"
   else
-    >&2 echo "Error creating dump of all databases"
+    >&2 curl -X POST -F "body=Error creating dump of all databases" -F 'title=Mysql Backup Error' http://notify:8000/notify
   fi
 fi
 
@@ -169,3 +192,5 @@ if [ -n "$BACKUP_KEEP_DAYS" ]; then
     | xargs -n1 -t -I 'KEY' aws $AWS_ARGS s3 rm s3://"${S3_BUCKET}"/'KEY'
   echo "Removal complete."
 fi
+
+curl ${WEBHOOK}
