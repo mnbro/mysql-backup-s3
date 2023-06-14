@@ -17,7 +17,7 @@ apk add curl
 
 # install s3 tools
 apk add python3 py3-pip
-pip install awscli
+pip install --no-cache-dir awscli
 
 # cleanup
 rm -rf /var/cache/apk/*

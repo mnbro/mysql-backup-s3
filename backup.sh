@@ -77,6 +77,7 @@ export PASSPHRASE=$(cat ${PASSPHRASE_FILE})
 copy_s3 () {
   SRC_FILE=$1
   DEST_FILE=$2
+  DB=$3
 
   if [ "${S3_ENDPOINT}" == "**None**" ]; then
     AWS_ARGS=""
@@ -95,7 +96,7 @@ copy_s3 () {
 
   echo "Uploading ${DEST_FILE} on S3..."
   
-  cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$S3_PREFIX/$DEST_FILE
+  cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$DB/$DEST_FILE
 
   if [ $? -ne 0 ]; then
     >&2 curl -X POST -F "body=Error uploading ${DEST_FILE} on S3" -F 'title=Mysql Backup Error' ${NOTIFICATIONS_SERVER_URL}
@@ -143,7 +144,7 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
           fi
       fi
 
-      copy_s3 "${DUMP_FILE}.gpg" $S3_FILE
+      copy_s3 "${DUMP_FILE}.gpg" $S3_FILE "${DB}"
       rm -f "${DUMP_FILE}.gpg" "${DUMP_FILE}"
     else
       >&2 curl -X POST -F "body=Error creating dump of ${DB}" -F 'title=Mysql Backup Error' ${NOTIFICATIONS_SERVER_URL}
@@ -175,7 +176,7 @@ else
         fi
     fi
 
-    copy_s3 "${DUMP_FILE}.gpg" $S3_FILE
+    copy_s3 "${DUMP_FILE}.gpg" $S3_FILE "${DB}"
     rm -f "${DUMP_FILE}.gpg" "${DUMP_FILE}"
   else
     >&2 curl -X POST -F "body=Error creating dump of all databases" -F 'title=Mysql Backup Error' ${NOTIFICATIONS_SERVER_URL}
@@ -192,7 +193,6 @@ if [ -n "$BACKUP_KEEP_DAYS" ]; then
   echo "Removing old backups from $S3_BUCKET..."
   aws $AWS_ARGS s3api list-objects \
     --bucket "${S3_BUCKET}" \
-    --prefix "${S3_PREFIX}" \
     --query "${backups_query}" \
     --output text \
     | xargs -n1 -t -I 'KEY' aws $AWS_ARGS s3 rm s3://"${S3_BUCKET}"/'KEY'
