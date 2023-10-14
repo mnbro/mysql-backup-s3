@@ -85,17 +85,8 @@ copy_s3 () {
     AWS_ARGS="--endpoint-url ${S3_ENDPOINT}"
   fi
 
-  if [ "${S3_ENSURE_BUCKET_EXISTS}" != "no" ]; then
-    echo "Ensuring S3 bucket $S3_BUCKET exists"
-    EXISTS_ERR=`aws $AWS_ARGS s3api head-bucket --bucket "$S3_BUCKET" 2>&1 || true`
-    if [[ ! -z "$EXISTS_ERR" ]]; then
-      echo "Bucket $S3_BUCKET not found (or owned by someone else), attempting to create"
-      aws $AWS_ARGS s3api create-bucket --bucket $S3_BUCKET
-    fi
-  fi
-
   echo "Uploading ${DEST_FILE} on S3..."
-  
+
   cat $SRC_FILE | aws $AWS_ARGS s3 cp - s3://$S3_BUCKET/$DB/$DEST_FILE
 
   if [ $? -ne 0 ]; then
