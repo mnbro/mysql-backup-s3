@@ -119,7 +119,7 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
     if [ $? -eq 0 ]; then
       if [ "${S3_FILENAME}" == "**None**" ]; then
         echo "Encrypting backup..."
-        gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
+        gpg --batch --encrypt --recipient-file "$PASSPHRASE" $DUMP_FILE
           if [ $? -eq 0 ]; then
             S3_FILE="${DUMP_START_TIME}.${DB}.sql.gz.gpg"
           else
@@ -127,7 +127,7 @@ if [ ! -z "$(echo $MULTI_FILES | grep -i -E "(yes|true|1)")" ]; then
           fi
       else
         echo "Encrypting backup..."
-        gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
+        gpg --batch --encrypt --recipient-file "$PASSPHRASE" $DUMP_FILE
           if [ $? -eq 0 ]; then
             S3_FILE="${S3_FILENAME}.${DB}.sql.gz.gpg"
           else
@@ -151,7 +151,7 @@ else
   if [ $? -eq 0 ]; then
     if [ "${S3_FILENAME}" == "**None**" ]; then
       echo "Encrypting backup..."
-      gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
+      gpg --batch --encrypt --recipient-file "$PASSPHRASE" $DUMP_FILE
         if [ $? -eq 0 ]; then
           S3_FILE="${DUMP_START_TIME}.dump.sql.gz.gpg"
         else
@@ -159,7 +159,7 @@ else
         fi
     else
       echo "Encrypting backup..."
-      gpg --symmetric --batch --passphrase "$PASSPHRASE" $DUMP_FILE
+      gpg --batch --encrypt --recipient-file "$PASSPHRASE" $DUMP_FILE
         if [ $? -eq 0 ]; then
           S3_FILE="${S3_FILENAME}.sql.gz.gpg"
         else
